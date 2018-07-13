@@ -68,8 +68,8 @@ const HumiditySensorType = 'Humidity Sensor';
 const motionLineStyle = styler([
   {
     key: 'value',
-    color: "#f44242",
-    selected: "#f44242"
+    color: "#1bbc0d",
+    selected: "#1bbc0d"
   }
 ]);
 
@@ -300,7 +300,7 @@ const refreshTemperatures = (room, deviceName, fetchTemperatures) => {
     from: moment().subtract(1, 'day').toISOString(),
     to: moment().toISOString()
   });
-  setTimeout(() => refreshTemperatures(room, deviceName, fetchTemperatures), 60 * 1000);
+  setTimeout(() => refreshTemperatures(room, deviceName, fetchTemperatures), 5 * 60 * 1000);
 }
 
 /**
@@ -313,7 +313,7 @@ const refreshHumidity = (room, deviceName, fetchHumidity) => {
     from: moment().subtract(1, 'day').toISOString(),
     to: moment().toISOString()
   });
-  setTimeout(() => refreshTemperatures(room, deviceName, fetchHumidity), 60 * 1000);
+  setTimeout(() => refreshTemperatures(room, deviceName, fetchHumidity), 5 * 60 * 1000);
 }
 
 /**
@@ -326,7 +326,7 @@ const refreshMotions = (room, deviceId, fetchMotions) => {
     from: moment().subtract(1, 'day').toISOString(),
     to: moment().toISOString()
   });
-  setTimeout(() => refreshTemperatures(room, deviceId, fetchMotions), 60 * 1000);
+  setTimeout(() => refreshTemperatures(room, deviceId, fetchMotions), 5 * 60 * 1000);
 }
 
 /**
@@ -339,7 +339,7 @@ const refreshBusyness = (room, deviceId, fetchBusyness) => {
     from: moment().subtract(30, 'minute').toISOString(),
     to: moment().toISOString()
   });
-  setTimeout(() => refreshBusyness(room, deviceId, fetchBusyness), 60 * 1000);
+  setTimeout(() => refreshBusyness(room, deviceId, fetchBusyness), 5 * 60 * 1000);
 }
 
 const refreshFloorPlan = (roomTemperatures, roomBusyness, display) => {
