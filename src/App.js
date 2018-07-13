@@ -14,6 +14,7 @@ import { TimeSeries } from 'pondjs';
 import { dataActions } from './state/modules/data';
 import { Typography, CardHeader, AppBar, Toolbar, Button } from '@material-ui/core';
 import { temperatureSeriesType, motionSeriesType, humiditySeriesType } from './state/modules/data/sagas';
+import LineChart from 'react-timeseries-charts/lib/components/LineChart';
 
 const editOverlay = false;
 
@@ -277,7 +278,7 @@ const Chart = compose(
                 }}
               />
               <Charts>
-                <AreaChart
+                <LineChart
                   style={motionLineStyle}
                   axis={motionAxis}
                   series={motionSeries}
