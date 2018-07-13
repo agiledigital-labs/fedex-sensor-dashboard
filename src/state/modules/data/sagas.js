@@ -4,6 +4,7 @@ import moment from 'moment';
 import dataActions from './actions';
 
 export const temperatureSeriesType = 'temperature';
+export const humiditySeriesType = 'humidity';
 export const motionSeriesType = 'motion';
 
 function* fetchTemperatures(action) {
@@ -21,6 +22,23 @@ function* fetchTemperatures(action) {
   };
 
   yield put(dataActions.data.setTemperatures({ roomTemperatures }));
+}
+
+function* fetchHumidity(action) {
+  const humidity = yield call(apiFetchHumidity, action.payload.deviceName, action.payload.from, action.payload.to);
+
+  const roomHumidity = {
+    [action.payload.deviceName]: {
+      room: action.payload.room,
+      name: action.payload.deviceName,
+      type: humiditySeriesType,
+      columns: ['time', 'value'],
+      latest: fp.last(humidity),
+      points: fp.map(t => ([moment(t.time).valueOf(), t.value]))(humidity)
+    }
+  };
+
+  yield put(dataActions.data.setHumidity({ roomHumidity }));
 }
 
 function* fetchMotions(action) {
@@ -79,6 +97,18 @@ const apiFetchTemp = (deviceName, from, to) => {
     .then(json => json.result);
 };
 
+const apiFetchHumidity = (deviceName, from, to) => {
+  return fetch(`https://fedex-sensor-api.staging.agiledigital.co/humidity?deviceName=${deviceName}&type=list&from=${from}&to=${to}`, {
+    headers: {
+      'content-type': 'application/json'
+    },
+    method: 'GET',
+    cors: true
+  })
+    .then(result => result.json())
+    .then(json => json.result);
+}
+
 const apiFetchMotions = (deviceId, from, to) => {
   return fetch(`https://fedex-sensor-api.staging.agiledigital.co/motion?deviceId=${deviceId}&type=list&from=${from}&to=${to}`, {
     headers: {
@@ -121,6 +151,7 @@ function* dataSagas() {
     takeEvery(dataActions.data.getTemperatures, fetchTemperatures),
     takeEvery(dataActions.data.getBusyness, fetchBusyness),
     takeEvery(dataActions.data.getMotions, fetchMotions),
+    takeEvery(dataActions.data.getHumidity, fetchHumidity),
     takeLatest(dataActions.data.getDevices, fetchDevices)
   ]);
 }

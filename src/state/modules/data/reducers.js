@@ -5,6 +5,7 @@ export const initialState = {
   roomTemperatures: {},
   roomBusyness: {},
   roomMotions: {},
+  roomHumidity: {},
   devices: []
 };
 
@@ -15,6 +16,13 @@ const reducer = handleActions(
       roomTemperatures: {
         ...state.roomTemperatures,
         ...action.payload.roomTemperatures
+      }
+    }),
+    [dataActions.data.setHumidity]: (state, action) => ({
+      ...state,
+      roomHumidity: {
+        ...state.roomHumidity,
+        ...action.payload.roomHumidity
       }
     }),
     [dataActions.data.setMotions]: (state, action) => ({

@@ -5,6 +5,9 @@ const actions = createActions({
     GET_TEMPERATURES: ({ room, deviceName, from, to }) => ({ room, deviceName, from, to }),
     SET_TEMPERATURES: ({ roomTemperatures }) => ({ roomTemperatures }),
 
+    GET_HUMIDITY: ({ room, deviceName, from, to }) => ({ room, deviceName, from, to }),
+    SET_HUMIDITY: ({ roomHumidity }) => ({ roomHumidity }),
+
     GET_DEVICES: undefined,
     SET_DEVICES: ({ devices }) => ({ devices }),
 

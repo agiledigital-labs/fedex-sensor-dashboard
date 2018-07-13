@@ -9,11 +9,11 @@ import Card from '@material-ui/core/Card';
 import CardContent from '@material-ui/core/CardContent';
 import './App.css';
 import { compose, lifecycle, withStateHandlers, withHandlers } from 'recompose';
-import { Charts, ChartContainer, ChartRow, YAxis, LineChart, EventMarker, BarChart } from 'react-timeseries-charts';
+import { Charts, ChartContainer, ChartRow, YAxis, EventMarker, styler, AreaChart } from 'react-timeseries-charts';
 import { TimeSeries } from 'pondjs';
 import { dataActions } from './state/modules/data';
 import { Typography, CardHeader, AppBar, Toolbar, Button } from '@material-ui/core';
-import { temperatureSeriesType, motionSeriesType } from './state/modules/data/sagas';
+import { temperatureSeriesType, motionSeriesType, humiditySeriesType } from './state/modules/data/sagas';
 
 const editOverlay = false;
 
@@ -63,6 +63,31 @@ const d3 = window.d3;
 
 const TemperatureSensorType = 'Temperature Sensor';
 const MotionSensorType = 'Motion Sensor';
+const HumiditySensorType = 'Humidity Sensor';
+
+const motionLineStyle = styler([
+  {
+    key: 'value',
+    color: "#f44242",
+    selected: "#f44242"
+  }
+]);
+
+const tempLineStyle = styler([
+  {
+    key: 'value',
+    color: "#760dbc",
+    selected: "#760dbc"
+  }
+]);
+
+const humLineStyle = styler([
+  {
+    key: 'value',
+    color: "#0d18bc",
+    selected: "#0d18bc"
+  }
+]);
 
 const styles = theme => ({
   root: {
@@ -96,7 +121,7 @@ const styles = theme => ({
   }
 });
 
-const renderMarker = (trackerEvent, trackerValue, axis) => {
+const renderMarker = (trackerEvent, label, trackerValue, axis) => {
   return (
     <EventMarker
       type='flag'
@@ -105,7 +130,7 @@ const renderMarker = (trackerEvent, trackerValue, axis) => {
       info={
         [
           {
-            label: 'Temp',
+            label,
             value: trackerValue
           }
         ]
@@ -125,92 +150,143 @@ const Chart = compose(
       selection: {},
       trackerValue: '',
       trackerEvent: null,
-      tracker: null
+      tracker: null,
+      trackerType: ''
     },
     {
       setHighlight: () => (highlight) => ({ highlight }),
       setSelection: () => (selection) => ({ selection }),
-      setTracker: () => (eventTime, v, e) => ({
+      setTracker: () => (eventTime, v, e, trackerType) => ({
         tracker: eventTime,
         trackerValue: v,
-        trackerEvent: e
+        trackerEvent: e,
+        trackerType
       })
     }
   ),
   withHandlers({
-    handleTrackerChanged: ({ setTracker }) => (series, t) => {
+    handleTrackerChanged: ({ setTracker }) => (type, series, t) => {
       if (t) {
         const e = series.atTime(t);
         const eventTime = new Date(
           e.begin().getTime() + (e.end().getTime() - e.begin().getTime()) / 2
         );
         const eventValue = e.get('value');
-        const v = `${eventValue > 0 ? '' : '-'}${eventValue}${degree}`;
-        setTracker(eventTime, v, e);
+        const v = `${eventValue > 0 ? '' : '-'}${eventValue}`;
+        setTracker(eventTime, v, e, type);
       }
       else {
         setTracker(null, null, null);
       }
     }
   })
-)(({ series, handleTrackerChanged, tracker, trackerEvent, trackerValue }) => {
+)(({ series, handleTrackerChanged, tracker, trackerEvent, trackerValue, trackerType }) => {
   const tempAxis = `${series.name}-temperature`;
   const motionAxis = `${series.name}-motion`;
+  const humidityAxis = `${series.name}-humidity`;
+
   const tempSeries = series.series[temperatureSeriesType] && series.series[temperatureSeriesType].series;
   const tempRange = series.series[temperatureSeriesType] && series.series[temperatureSeriesType].range;
+
   const motionSeries = series.series[motionSeriesType] && series.series[motionSeriesType].series;
   const motionRange = series.series[motionSeriesType] && series.series[motionSeriesType].range;
 
-  console.log(series.series);
+  const humiditySeries = series.series[humiditySeriesType] && series.series[humiditySeriesType].series;
+  const humidityRange = series.series[humiditySeriesType] && series.series[humiditySeriesType].range;
 
   return (
-    <ChartContainer
-      timeRange={tempRange || motionRange}
-      format={(d) => moment(d).format('HH:mm')}
-      width={800}
-      onTrackerChanged={(t) => handleTrackerChanged(tempSeries, t)}>
-      <ChartRow height='200'>
-        {
-          tempSeries ?
-            <YAxis
-              id={tempAxis}
-              label='Temperature'
-              min={tempSeries.min()}
-              max={tempSeries.max()}
-              width='60'
-              format={(d) => `${d}${degree}`}
-            /> : <EventMarker />
-        }
-        <Charts>
-          {
-            tempSeries ?
-              <LineChart
-                axis={tempAxis}
-                series={tempSeries}
-              /> : <EventMarker />
-          }
-          {/* {
-            motionSeries ?
-              <BarChart
-                axis={motionAxis}
-                series={motionSeries}
-              /> : <EventMarker />
-          } */}
-          {tracker ? renderMarker(trackerEvent, trackerValue, tempAxis) : <EventMarker />}
-        </Charts>
-        {/* {
-          motionSeries ?
-            <YAxis
-              id={motionAxis}
-              label='Motion'
-              min={motionSeries.min()}
-              max={motionSeries.max()}
-              width='60'
-              format={(d) => `${d}${degree}`}
-            /> : <EventMarker />
-        } */}
-      </ChartRow>
-    </ChartContainer>
+    <div>
+      {
+        tempSeries && tempRange ?
+          <ChartContainer
+            timeRange={tempRange}
+            format={(d) => moment(d).format('HH:mm')}
+            width={800}
+            onTrackerChanged={(t) => handleTrackerChanged(temperatureSeriesType, tempSeries, t)}>
+            <ChartRow height='200'>
+              <YAxis
+                id={tempAxis}
+                label='Temperature'
+                min={tempSeries.min()}
+                max={tempSeries.max()}
+                width='60'
+                format={(d) => `${d}${degree}`}
+              />
+              <Charts>
+                <AreaChart
+                  style={tempLineStyle}
+                  axis={tempAxis}
+                  series={tempSeries}
+                />
+                {tracker && trackerType === temperatureSeriesType ?
+                  renderMarker(trackerEvent, 'Temp', `${trackerValue}${degree}`, tempAxis) : <EventMarker />}
+              </Charts>
+            </ChartRow>
+          </ChartContainer> : null
+      }
+      {
+        humiditySeries && humidityRange ?
+          <ChartContainer
+            timeRange={humidityRange}
+            format={(d) => moment(d).format('HH:mm')}
+            width={800}
+            onTrackerChanged={(t) => handleTrackerChanged(humiditySeriesType, humiditySeries, t)}>
+            <ChartRow height='200'>
+              <YAxis
+                id={humidityAxis}
+                label='Humidity'
+                min={humiditySeries.min()}
+                max={humiditySeries.max()}
+                width='60'
+                format={(d) => `${d}%`}
+              />
+              <Charts>
+                <AreaChart
+                  style={humLineStyle}
+                  axis={humidityAxis}
+                  series={humiditySeries}
+                />
+                {tracker && trackerType === humiditySeriesType ?
+                  renderMarker(trackerEvent, 'Humidity', `${trackerValue}%`, humidityAxis) : <EventMarker />}
+              </Charts>
+            </ChartRow>
+          </ChartContainer> : null
+      }
+      {
+        motionSeries && motionRange ?
+          <ChartContainer
+            timeRange={motionRange}
+            format={(d) => moment(d).format('HH:mm')}
+            width={800}
+            onTrackerChanged={(t) => handleTrackerChanged(motionSeries, t)}>
+            <ChartRow height='200'>
+              <YAxis
+                id={motionAxis}
+                label='Motion'
+                min={motionSeries.min()}
+                max={motionSeries.max()}
+                width='60'
+                format={(d) => {
+                  if (d === 0) {
+                    return 'No';
+                  }
+                  else if (d === 1) {
+                    return 'Yes'
+                  }
+                  return '';
+                }}
+              />
+              <Charts>
+                <AreaChart
+                  style={motionLineStyle}
+                  axis={motionAxis}
+                  series={motionSeries}
+                />
+              </Charts>
+            </ChartRow>
+          </ChartContainer> : null
+      }
+    </div>
   );
 });
 
@@ -228,7 +304,20 @@ const refreshTemperatures = (room, deviceName, fetchTemperatures) => {
 }
 
 /**
- * Temperatures from now to 1 day ago.
+ * Humidity from now to 1 day ago.
+ */
+const refreshHumidity = (room, deviceName, fetchHumidity) => {
+  fetchHumidity({
+    room,
+    deviceName,
+    from: moment().subtract(1, 'day').toISOString(),
+    to: moment().toISOString()
+  });
+  setTimeout(() => refreshTemperatures(room, deviceName, fetchHumidity), 60 * 1000);
+}
+
+/**
+ * Motions from now to 1 day ago.
  */
 const refreshMotions = (room, deviceId, fetchMotions) => {
   fetchMotions({
@@ -360,7 +449,8 @@ const mapDispatchToProps = (dispatch) => ({
   fetchTemperatures: bindActionCreators(dataActions.data.getTemperatures, dispatch),
   fetchDevices: bindActionCreators(dataActions.data.getDevices, dispatch),
   fetchBusyness: bindActionCreators(dataActions.data.getBusyness, dispatch),
-  fetchMotions: bindActionCreators(dataActions.data.getMotions, dispatch)
+  fetchMotions: bindActionCreators(dataActions.data.getMotions, dispatch),
+  fetchHumidity: bindActionCreators(dataActions.data.getHumidity, dispatch)
 });
 
 export default compose(
@@ -381,13 +471,15 @@ export default compose(
       const { fetchDevices } = this.props;
       fetchDevices();
     },
-    componentWillReceiveProps({ data, fetchTemperatures, fetchBusyness, fetchMotions, startedRefresh, startRefresh }) {
+    componentWillReceiveProps({ data, fetchTemperatures, fetchBusyness, fetchMotions, startedRefresh, startRefresh, fetchHumidity }) {
       if (!startedRefresh) {
         startRefresh();
         fp.forEach(room => {
           const sensors = data.devices[room];
           const temperatureSensor = fp.find(s => s.sensor_type === TemperatureSensorType)(sensors);
           const motionSensor = fp.find(s => s.sensor_type === MotionSensorType)(sensors);
+          const humiditySensor = fp.find(s => s.sensor_type === HumiditySensorType)(sensors);
+
           if (temperatureSensor) {
             refreshTemperatures(room, temperatureSensor.friendly_name, fetchTemperatures);
           }
@@ -396,15 +488,20 @@ export default compose(
             refreshBusyness(room, motionSensor.deviceId, fetchBusyness);
             refreshMotions(room, motionSensor.deviceId, fetchMotions);
           }
+
+          if (humiditySensor) {
+            refreshHumidity(room, humiditySensor.friendly_name, fetchHumidity);
+          }
         })(Object.keys(data.devices));
       }
     }
   })
 )(({ classes, data, floorDisplay, setFloorDisplay }) => {
-  const allData = fp.groupBy(d => d.room)({ ...data.roomTemperatures, ...data.roomMotions });
+  const allData = fp.groupBy(d => d.room)({ ...data.roomTemperatures, ...data.roomMotions, ...data.roomHumidity });
   const allSeries = fp.map(room => {
     const tempTypeData = fp.find(d => d.type === temperatureSeriesType)(allData[room]);
     const motionTypeData = fp.find(d => d.type === motionSeriesType)(allData[room]);
+    const humidityTypeData = fp.find(d => d.type === humiditySeriesType)(allData[room]);
 
     let series = {};
 
@@ -421,6 +518,14 @@ export default compose(
       series[motionSeriesType] = {
         series: motionSeries,
         range: motionSeries.range()
+      }
+    }
+
+    if (humidityTypeData) {
+      const humiditySeries = new TimeSeries(humidityTypeData);
+      series[humiditySeriesType] = {
+        series: humiditySeries,
+        range: humiditySeries.range()
       }
     }
 
@@ -465,11 +570,6 @@ export default compose(
                       title={
                         <Typography variant='title'>
                           Location: {s.room}
-                        </Typography>
-                      }
-                      subheader={
-                        <Typography variant='caption'>
-                          Device: {s.name}
                         </Typography>
                       }
                     />
