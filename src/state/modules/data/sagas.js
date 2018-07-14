@@ -7,7 +7,16 @@ export const temperatureSeriesType = 'temperature';
 export const humiditySeriesType = 'humidity';
 export const motionSeriesType = 'motion';
 
-function* fetchTemperatures(action) {
+const withErrorHandler = (message) => (fn) => {
+  try {
+    return fn;
+  }
+  catch (err) {
+    console.error(message, err);
+  }
+}
+
+const fetchTemperatures = withErrorHandler('Fetching temperatures.')(function* fetchTemperatures(action) {
   const temperatures = yield call(apiFetchTemp, action.payload.deviceName, action.payload.from, action.payload.to);
 
   const roomTemperatures = {
@@ -16,15 +25,15 @@ function* fetchTemperatures(action) {
       name: action.payload.deviceName,
       type: temperatureSeriesType,
       columns: ['time', 'value'],
-      latest: fp.last(temperatures),
+      latest: fp.last(temperatures) || {},
       points: fp.map(t => ([moment(t.time).valueOf(), t.value]))(temperatures)
     }
   };
 
   yield put(dataActions.data.setTemperatures({ roomTemperatures }));
-}
+});
 
-function* fetchHumidity(action) {
+const fetchHumidity = withErrorHandler('Fetching humidity.')(function* (action) {
   const humidity = yield call(apiFetchHumidity, action.payload.deviceName, action.payload.from, action.payload.to);
 
   const roomHumidity = {
@@ -33,15 +42,15 @@ function* fetchHumidity(action) {
       name: action.payload.deviceName,
       type: humiditySeriesType,
       columns: ['time', 'value'],
-      latest: fp.last(humidity),
+      latest: fp.last(humidity) || {},
       points: fp.map(t => ([moment(t.time).valueOf(), t.value]))(humidity)
     }
   };
 
   yield put(dataActions.data.setHumidity({ roomHumidity }));
-}
+});
 
-function* fetchMotions(action) {
+const fetchMotions = withErrorHandler('Fetching motions.')(function* (action) {
   const motions = yield call(apiFetchMotions, action.payload.deviceId, action.payload.from, action.payload.to);
 
   const roomMotions = {
@@ -50,15 +59,15 @@ function* fetchMotions(action) {
       name: action.payload.deviceId,
       type: motionSeriesType,
       columns: ['time', 'value'],
-      latest: fp.last(motions),
+      latest: fp.last(motions) || {},
       points: fp.map(t => ([moment(t.time).valueOf(), t.value]))(motions)
     }
   };
 
   yield put(dataActions.data.setMotions({ roomMotions }));
-}
+});
 
-function* fetchBusyness(action) {
+const fetchBusyness = withErrorHandler('Fetching busyness.')(function* (action) {
   try {
     const busyness = yield call(apiFetchBusyness, action.payload.deviceId, action.payload.from, action.payload.to);
 
@@ -73,17 +82,17 @@ function* fetchBusyness(action) {
     yield put(dataActions.data.setBusyness({ roomBusyness }));
   }
   catch (err) {
-    console.log(err);
+    console.error('Error fetch busyness', err);
   }
-}
+});
 
-function* fetchDevices() {
+const fetchDevices = withErrorHandler('Fetching devices.')(function* () {
   const devices = yield call(apiFetchDevices);
 
   const grouped = fp.groupBy(d => d.room)(devices);
 
   yield put(dataActions.data.setDevices({ devices: grouped }));
-}
+});
 
 const apiFetchTemp = (deviceName, from, to) => {
   return fetch(`https://fedex-sensor-api.staging.agiledigital.co/temperature?deviceName=${deviceName}&type=list&from=${from}&to=${to}`, {
