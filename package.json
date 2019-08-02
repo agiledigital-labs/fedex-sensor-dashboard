@@ -10,7 +10,7 @@
     "moment": "^2.22.2",
     "pondjs": "^0.8.9",
     "react": "^16.4.1",
-    "react-dom": "^16.4.1",
+    "react-dom": "^16.4.2",
     "react-redux": "^5.0.7",
     "react-router-dom": "^4.3.1",
     "react-scripts": "1.1.4",
